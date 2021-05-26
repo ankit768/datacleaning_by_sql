@@ -1,0 +1,143 @@
+
+--data cleaning 
+select *
+from [porfolio project]..Sheet1$;
+
+-- change the date format
+ select saledate2
+ from [porfolio project]..Sheet1$;
+
+ 
+ update Sheet1$
+ set SaleDate = CONVERT(date,saledate);
+
+ alter table Sheet1$
+ add saledate2 date;
+
+ update Sheet1$
+ set saledate2 = CONVERT(date,saledate);
+
+
+ --property address
+ select propertyaddress
+ from [porfolio project]..Sheet1$
+ where PropertyAddress is null ;
+
+ select a.propertyaddress,a.parcelid,b.propertyaddress,b.parcelid,isnull(a.propertyaddress,b.propertyaddress)
+  from [porfolio project]..Sheet1$ a
+  join [porfolio project]..Sheet1$ b 
+  on a.parcelid = b.parcelid
+  and a.uniqueid <> b.uniqueid
+  where a.propertyaddress is null;
+
+  update a
+  set propertyaddress = isnull(a.propertyaddress,b.propertyaddress)
+  from [porfolio project]..Sheet1$ a
+  join [porfolio project]..Sheet1$ b 
+  on a.parcelid = b.parcelid
+  and a.uniqueid <> b.uniqueid
+  where a.propertyaddress is null;
+
+
+  --split the address of property in city stae and all
+
+  select 
+  SUBSTRING(propertyaddress,1,CHARINDEX(',',propertyaddress) - 1) as mainaddress,
+  SUBSTRING(propertyaddress,CHARINDEX(',',propertyaddress) + 1,len(propertyaddress)) as PAcity
+
+  from [porfolio project]..Sheet1$;
+
+  
+ alter table Sheet1$
+ add mainaddress varchar(255);
+
+ update Sheet1$
+ set mainaddress = SUBSTRING(propertyaddress,1,CHARINDEX(',',propertyaddress) - 1) ;
+
+ 
+ alter table Sheet1$
+ add PAcity varchar(255);
+
+ update Sheet1$
+ set PAcity =SUBSTRING(propertyaddress,CHARINDEX(',',propertyaddress) + 1,len(propertyaddress));
+
+ --change in owneraddress
+ select PARSENAME(replace(owneraddress,',','.'),3),
+  PARSENAME(replace(owneraddress,',','.'),2),
+  PARSENAME(replace(owneraddress,',','.'),1)
+from [porfolio project]..Sheet1$;
+
+ alter table Sheet1$
+ add OAmainaddress varchar(255);
+
+ update Sheet1$
+ set OAmainaddress = PARSENAME(replace(owneraddress,',','.'),3) ;
+
+ 
+ alter table Sheet1$
+ add OAcity varchar(255);
+
+ update Sheet1$
+ set OAcity = PARSENAME(replace(owneraddress,',','.'),2);
+
+ alter table Sheet1$
+ add OAstate varchar(255);
+
+ update Sheet1$
+ set OAstate =  PARSENAME(replace(owneraddress,',','.'),1) ;
+
+ 
+ ---change the y into yas and n into no
+ select distinct(SoldAsVacant),count( SoldAsVacant)
+from [porfolio project]..Sheet1$
+group by SoldAsVacant
+order by 2;
+
+select  SoldAsVacant
+, case when SoldAsVacant = 'Y' then 'Yes'
+       when SoldAsVacant = 'N' then 'No'
+	   else SoldAsVacant
+	   end
+ from [porfolio project]..Sheet1$;
+
+ update Sheet1$
+ set SoldAsVacant = case when SoldAsVacant = 'Y' then 'Yes'
+       when SoldAsVacant = 'N' then 'No'
+	   else SoldAsVacant
+	   end;
+
+	   ---remove duplicate
+WITH RowNumCTE AS(
+Select *,
+	ROW_NUMBER() OVER (
+	PARTITION BY ParcelID,
+				 PropertyAddress,
+				 SalePrice,
+				 SaleDate,
+				 LegalReference
+				 ORDER BY
+					UniqueID
+					) row_num
+
+From [porfolio project]..Sheet1$
+--order by ParcelID
+)
+Select *
+From RowNumCTE
+Where row_num > 1
+Order by PropertyAddress
+
+select *
+from [porfolio project]..Sheet1$;
+
+
+-- Delete Unused Columns
+
+
+
+Select *
+From [porfolio project]..Sheet1$
+
+
+ALTER TABLE [porfolio project]..Sheet1$
+DROP COLUMN   saledateconverted,saledateconverteed,saledateconvert
